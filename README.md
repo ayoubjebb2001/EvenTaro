@@ -17,26 +17,29 @@ eventaro/
 ## Tech Stack
 
 ### Frontend (apps/web)
+
 - **Next.js 16** - React framework with App Router
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first CSS framework
 - **ESLint & Prettier** - Code quality tools
 
 ### Backend (apps/api)
+
 - **NestJS 11** - Progressive Node.js framework
 - **TypeScript** - Type-safe development
 - **PostgreSQL** - Primary database
 - **ESLint & Prettier** - Code quality tools
 
 ### Infrastructure
+
 - **Docker** - Containerization
 - **Docker Compose** - Multi-container orchestration
 - **PostgreSQL 15** - Database
 
 ## Prerequisites
 
-- Node.js >= 18.0.0
-- npm >= 9.0.0
+- Node.js >= 20.9.0
+- npm >= 11.0.0
 - Docker and Docker Compose (for containerized development)
 
 ## Getting Started
@@ -44,20 +47,23 @@ eventaro/
 ### Local Development (Without Docker)
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Set up environment variables:**
+
    ```bash
    # Frontend
    cp apps/web/.env.example apps/web/.env
-   
+
    # Backend
    cp apps/api/.env.example apps/api/.env
    ```
 
 3. **Start PostgreSQL** (using Docker):
+
    ```bash
    docker run -d \
      --name eventaro-db \
@@ -69,10 +75,11 @@ eventaro/
    ```
 
 4. **Run development servers:**
+
    ```bash
    # Frontend (http://localhost:3000)
    npm run dev:web
-   
+
    # Backend (http://localhost:3001)
    npm run dev:api
    ```
@@ -80,6 +87,7 @@ eventaro/
 ### Docker Development (With Hot-Reload)
 
 1. **Start all services in development mode:**
+
    ```bash
    npm run docker:dev
    ```
@@ -97,6 +105,7 @@ eventaro/
 ### Docker Production Build
 
 1. **Build and start all services:**
+
    ```bash
    npm run docker:build
    npm run docker:up
@@ -110,6 +119,7 @@ eventaro/
 ## Available Scripts
 
 ### Root Level
+
 - `npm run dev:web` - Start Next.js development server
 - `npm run dev:api` - Start NestJS development server
 - `npm run build:web` - Build Next.js for production
@@ -122,12 +132,14 @@ eventaro/
 - `npm run docker:build` - Build Docker images
 
 ### Frontend (apps/web)
+
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 
 ### Backend (apps/api)
+
 - `npm run start:dev` - Start development server with watch mode
 - `npm run build` - Build for production
 - `npm run start:prod` - Start production server
@@ -138,11 +150,14 @@ eventaro/
 ## Configuration
 
 ### TypeScript
+
 Both apps use **strict mode** enabled with the following configurations:
+
 - Frontend: `strict: true` in tsconfig.json
 - Backend: `strict: true` in tsconfig.json
 
 ### ESLint & Prettier
+
 - Shared Prettier configuration at root level (`.prettierrc`)
 - ESLint configured for both Next.js and NestJS
 - Run `npm run lint` to check all workspaces
@@ -151,6 +166,7 @@ Both apps use **strict mode** enabled with the following configurations:
 ### Environment Variables
 
 #### Frontend (.env)
+
 ```
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_APP_NAME=EvenTaro
@@ -159,6 +175,7 @@ NODE_ENV=development
 ```
 
 #### Backend (.env)
+
 ```
 PORT=3001
 NODE_ENV=development
@@ -175,12 +192,15 @@ CORS_ORIGIN=http://localhost:3000
 ## Docker Services
 
 ### Networks
+
 - `eventaro-network` - Bridge network for all services
 
 ### Volumes
+
 - `eventaro_postgres_data` - Persistent storage for PostgreSQL data
 
 ### Services
+
 1. **web** - Next.js frontend (port 3000)
 2. **api** - NestJS backend (port 3001)
 3. **db** - PostgreSQL database (port 5432)

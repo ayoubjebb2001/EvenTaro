@@ -31,6 +31,26 @@
 $ npm install
 ```
 
+## Prisma ORM
+
+All Prisma commands should be executed from `apps/api` so that the CLI picks up `prisma.config.ts` and the monorepo-level `.env`.
+
+```bash
+# generate the Prisma Client after editing prisma/schema.prisma
+$ npx prisma generate
+
+# create a new migration and sync the database schema
+$ npx prisma migrate dev --name <migration-name>
+
+# apply the current schema without a migration (useful for prototyping)
+$ npx prisma db push
+
+# inspect and edit data visually
+$ npx prisma studio
+```
+
+The connection string is defined once in the root `.env` using `DATABASE_URL`, so the CLI and the NestJS `PrismaService` read the exact same PostgreSQL credentials.
+
 ## Compile and run the project
 
 ```bash
