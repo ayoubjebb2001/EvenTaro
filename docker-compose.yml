@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: eventaro-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: eventaro
+      POSTGRES_PASSWORD: eventaro_password
+      POSTGRES_DB: eventaro_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - eventaro-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U eventaro']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NestJS Backend API
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: eventaro-api
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: eventaro
+      DATABASE_PASSWORD: eventaro_password
+      DATABASE_NAME: eventaro_db
+      JWT_SECRET: dev-secret-key
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - eventaro-network
+    volumes:
+      - ./apps/api/src:/app/src
+      - ./apps/api/test:/app/test
+
+  # Next.js Frontend
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: eventaro-web
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_APP_NAME: EvenTaro
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    depends_on:
+      - api
+    networks:
+      - eventaro-network
+
+networks:
+  eventaro-network:
+    driver: bridge
+    name: eventaro-network
+
+volumes:
+  postgres_data:
+    name: eventaro_postgres_data
