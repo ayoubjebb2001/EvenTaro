@@ -31,7 +31,7 @@ services:
       - '3001:3001'
     environment:
       PORT: 3001
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_HOST: db
       DATABASE_PORT: 5432
       DATABASE_USER: eventaro
@@ -59,7 +59,7 @@ services:
     ports:
       - '3000:3000'
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       NEXT_PUBLIC_API_URL: http://localhost:3001
       NEXT_PUBLIC_APP_NAME: EvenTaro
       NEXT_PUBLIC_APP_URL: http://localhost:3000
