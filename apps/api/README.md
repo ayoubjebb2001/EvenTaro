@@ -51,6 +51,25 @@ $ npx prisma studio
 
 The connection string is defined once in the root `.env` using `DATABASE_URL`, so the CLI and the NestJS `PrismaService` read the exact same PostgreSQL credentials.
 
+## Authentication
+
+Environment variables:
+
+- `JWT_SECRET`: signing key for access tokens
+- `JWT_ACCESS_EXPIRES_IN`: access token TTL (e.g. `15m`)
+- `JWT_REFRESH_SECRET`: signing key for refresh tokens
+- `JWT_REFRESH_EXPIRES_IN`: refresh token TTL (e.g. `30d`)
+
+Routes (all JSON, tokens via `Authorization: Bearer <token>`):
+
+- `POST /auth/register` → `{ email, password }` → returns `{ user, accessToken, refreshToken }`
+- `POST /auth/login` → same contract as register
+- `POST /auth/logout` → requires access token, revokes stored refresh token
+- `GET /auth/refresh` → requires refresh token, returns new token pair
+- `GET /auth/me` → requires access token, returns the authenticated profile
+
+Use the refresh token to rotate credentials and always store it securely (HTTP-only cookie or secure storage in the client). On logout, discard both tokens.
+
 ## Compile and run the project
 
 ```bash

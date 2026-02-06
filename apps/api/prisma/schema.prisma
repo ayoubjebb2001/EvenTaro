@@ -7,10 +7,51 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(uuid())
+  email        String        @unique
+  password     String
+  role         Role          @default(USER)
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+  hashedRefreshToken String?
+}
+
+model Event {
+  id           String          @id @default(uuid())
+  title        String
+  description  String
+  dateTime     DateTime
+  location     String
+  maxCapacity  Int
+  status       EventStatus     @default(DRAFT)
+  reservations Reservation[]
+  createdAt    DateTime        @default(now())
+}
+
+model Reservation {
+  id        String             @id @default(uuid())
+  userId    String
+  eventId   String
+  status    ReservationStatus  @default(PENDING)
+  user      User               @relation(fields: [userId], references: [id])
+  event     Event              @relation(fields: [eventId], references: [id])
+  createdAt DateTime           @default(now())
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  REFUSED
+  CANCELLED
 }
