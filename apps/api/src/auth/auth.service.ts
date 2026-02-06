@@ -1,11 +1,9 @@
-import '../config/env.loader';
 import {
   ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Role, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { UserResponseDto } from '../users/dto/user-response.dto';
@@ -14,18 +12,25 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthTokens } from './interfaces/auth-tokens.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { resolveExpiresIn } from './utils/jwt-expires';
+import { AppRole } from './constants/roles';
+import type { UserModel } from '../generated/prisma/models/User';
 
 const SALT_ROUNDS = 12;
 
 @Injectable()
 export class AuthService {
   private readonly accessSecret = process.env.JWT_SECRET ?? 'changeme';
-  private readonly accessExpiresIn =
-    process.env.JWT_ACCESS_EXPIRES_IN ?? process.env.JWT_EXPIRES_IN ?? '15m';
+  private readonly accessExpiresIn = resolveExpiresIn(
+    process.env.JWT_ACCESS_EXPIRES_IN ?? process.env.JWT_EXPIRES_IN,
+    '15m',
+  );
   private readonly refreshSecret =
     process.env.JWT_REFRESH_SECRET ?? this.accessSecret;
-  private readonly refreshExpiresIn =
-    process.env.JWT_REFRESH_EXPIRES_IN ?? '30d';
+  private readonly refreshExpiresIn = resolveExpiresIn(
+    process.env.JWT_REFRESH_EXPIRES_IN,
+    '30d',
+  );
 
   constructor(
     private readonly usersService: UsersService,
@@ -42,7 +47,7 @@ export class AuthService {
     const user = await this.usersService.create({
       email: registerDto.email,
       password: hashedPassword,
-      role: Role.USER,
+      role: AppRole.USER,
     });
 
     const tokens = await this.generateTokens(user);
@@ -104,7 +109,7 @@ export class AuthService {
     return this.usersService.toResponseDto(user);
   }
 
-  private async generateTokens(user: User): Promise<AuthTokens> {
+  private async generateTokens(user: UserModel): Promise<AuthTokens> {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -141,7 +146,10 @@ export class AuthService {
     return bcrypt.compare(data, encrypted);
   }
 
-  private buildAuthResponse(user: User, tokens: AuthTokens): AuthResponseDto {
+  private buildAuthResponse(
+    user: UserModel,
+    tokens: AuthTokens,
+  ): AuthResponseDto {
     const safeUser: UserResponseDto = this.usersService.toResponseDto(user);
     return { user: safeUser, ...tokens };
   }

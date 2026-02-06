@@ -1,22 +1,27 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/user-response.dto';
+import { Prisma } from '../generated/prisma/client';
+import type { UserModel } from '../generated/prisma/models/User';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: Prisma.UserCreateInput): Promise<User> {
+  create(data: Prisma.UserCreateInput): Promise<UserModel> {
     return this.prisma.user.create({ data });
   }
 
-  findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { email } });
+  findByEmail(email: string): Promise<UserModel | null> {
+    return this.prisma.user.findUnique({
+      where: { email },
+    });
   }
 
-  findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { id } });
+  findById(id: string): Promise<UserModel | null> {
+    return this.prisma.user.findUnique({
+      where: { id },
+    });
   }
 
   async setHashedRefreshToken(
@@ -29,7 +34,7 @@ export class UsersService {
     });
   }
 
-  toResponseDto(user: User): UserResponseDto {
+  toResponseDto(user: UserModel): UserResponseDto {
     const { id, email, role, createdAt } = user;
     return { id, email, role, createdAt };
   }

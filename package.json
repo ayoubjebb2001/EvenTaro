@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "description": "EvenTaro - Event Management Platform",
   "private": true,
+  "type": "module",
   "workspaces": [
     "apps/*"
   ],
   "scripts": {
     "dev:web": "npm run dev --workspace=web",
-    "dev:api": "npm run start:dev --workspace=api",
+    "dev:api": "npm run dev --workspace=api",
     "build:web": "npm run build --workspace=web",
     "build:api": "npm run build --workspace=api",
     "lint": "npm run lint --workspaces",

@@ -7,7 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { AppRole } from './constants/roles';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -17,7 +17,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh.guard';
 import { Roles } from './decorators/roles.decorator';
 import { RolesGuard } from './guards/roles.guard';
-import { JwtRefreshPayload } from './interfaces/jwt-payload.interface';
+import type { JwtRefreshPayload } from './interfaces/jwt-payload.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -35,7 +35,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.USER, Role.ADMIN)
+  @Roles(AppRole.USER, AppRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('logout')
   async logout(@CurrentUser('sub') userId: string): Promise<void> {
@@ -49,7 +49,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.USER, Role.ADMIN)
+  @Roles(AppRole.USER, AppRole.ADMIN)
   @Get('me')
   me(@CurrentUser('sub') userId: string) {
     return this.authService.getProfile(userId);

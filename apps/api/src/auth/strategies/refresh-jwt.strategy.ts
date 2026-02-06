@@ -1,4 +1,3 @@
-import '../../config/env.loader';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
