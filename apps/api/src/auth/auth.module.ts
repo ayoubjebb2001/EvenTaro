@@ -1,4 +1,3 @@
-import '../config/env.loader';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -10,6 +9,7 @@ import { JwtRefreshAuthGuard } from './guards/jwt-refresh.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshJwtStrategy } from './strategies/refresh-jwt.strategy';
+import { resolveExpiresIn } from './utils/jwt-expires';
 
 @Module({
   imports: [
@@ -18,10 +18,10 @@ import { RefreshJwtStrategy } from './strategies/refresh-jwt.strategy';
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? 'changeme',
       signOptions: {
-        expiresIn:
-          process.env.JWT_ACCESS_EXPIRES_IN ??
-          process.env.JWT_EXPIRES_IN ??
+        expiresIn: resolveExpiresIn(
+          process.env.JWT_ACCESS_EXPIRES_IN ?? process.env.JWT_EXPIRES_IN,
           '15m',
+        ),
       },
     }),
   ],

@@ -219,6 +219,12 @@ CORS_ORIGIN=http://localhost:3000
 ✅ Hot-reload in development mode
 ✅ Health checks for services
 
+## Documentation
+
+- **[Architecture](docs/ARCHITECTURE.md)** – Vue d’ensemble, flux, diagramme de classes
+- **[Guide d’installation](docs/INSTALLATION.md)** – Installation locale et Docker, variables d’environnement
+- **[Règles métier](docs/REGLES_METIER.md)** – Statuts, réservations, annulation, ticket PDF
+
 ## Contributing
 
 1. Create a feature branch

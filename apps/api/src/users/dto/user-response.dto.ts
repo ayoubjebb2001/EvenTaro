@@ -1,8 +1,9 @@
-import { Role } from '@prisma/client';
+import type { AppRole } from '../../auth/constants/roles';
 
 export class UserResponseDto {
   id!: string;
+  fullName!: string;
   email!: string;
-  role!: Role;
+  role!: AppRole;
   createdAt!: Date;
 }
