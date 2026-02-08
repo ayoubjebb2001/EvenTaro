@@ -65,7 +65,7 @@ export function getAccessToken(): string | null {
   return accessToken;
 }
 
-function getStoredRefreshToken(): string | null {
+export function getStoredRefreshToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('eventaro_refresh');
 }

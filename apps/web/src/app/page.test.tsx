@@ -2,10 +2,10 @@ import { render, screen } from '@testing-library/react';
 import Home from './page';
 
 describe('Home', () => {
-  it('renders title and link to events', () => {
+  it('renders hero heading and link to events', () => {
     render(<Home />);
-    expect(screen.getByRole('heading', { name: /event management platform/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /view events/i })).toHaveAttribute('href', '/events');
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /browse events/i })).toHaveAttribute('href', '/events');
   });
 
   it('renders sign in and register links', () => {

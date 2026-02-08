@@ -1,206 +1,226 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import {
+    Plus, CheckCircle2, XCircle, Ban, Pencil,
+    BarChart3, CalendarDays, Users as UsersIcon,
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api, type EventResponse, type ReservationResponse } from '@/lib/api';
+import {
+    Card, CardContent, CardHeader, Button, StatusBadge,
+    ErrorAlert, PageSpinner, Badge,
+} from '@/components/ui';
+
+interface Stats {
+    PENDING: number;
+    CONFIRMED: number;
+    REFUSED: number;
+    CANCELLED: number;
+}
 
 export default function AdminDashboardPage() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const [events, setEvents] = useState<EventResponse[]>([]);
-  const [reservations, setReservations] = useState<ReservationResponse[]>([]);
-  const [stats, setStats] = useState<{ PENDING: number; CONFIRMED: number; REFUSED: number; CANCELLED: number } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+    const router = useRouter();
+    const { user } = useAuth();
+    const [events, setEvents] = useState<EventResponse[]>([]);
+    const [reservations, setReservations] = useState<ReservationResponse[]>([]);
+    const [stats, setStats] = useState<Stats | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (user?.role !== 'ADMIN') {
-      router.replace('/dashboard');
-      return;
+    const isAdmin = user?.role === 'ADMIN';
+
+    const loadReservations = useCallback(async () => {
+        try {
+            const res = await api.reservations.getAll();
+            setReservations(res);
+        } catch {
+            /* ignore */
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isAdmin) {
+            router.replace('/dashboard');
+            return;
+        }
+        Promise.all([
+            api.events.getAll(),
+            api.reservations.getAll().catch(() => [] as ReservationResponse[]),
+            api.reservations.getStats().catch(() => null),
+        ])
+            .then(([evts, res, st]) => {
+                setEvents(evts);
+                setReservations(res);
+                setStats(st);
+            })
+            .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
+            .finally(() => setLoading(false));
+    }, [isAdmin, router]);
+
+    async function handleAction(id: string, action: 'confirm' | 'refuse' | 'cancel') {
+        setError('');
+        try {
+            await api.reservations[action](id);
+            await loadReservations();
+            const newStats = await api.reservations.getStats().catch(() => null);
+            if (newStats) setStats(newStats);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Action failed');
+        }
     }
-    Promise.all([
-      api.events.getAll(),
-      api.reservations.getAll().catch(() => [] as ReservationResponse[]),
-      api.reservations.getStats().catch(() => null),
-    ])
-      .then(([evts, res, st]) => {
-        setEvents(evts);
-        setReservations(res);
-        setStats(st);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
-      .finally(() => setLoading(false));
-  }, [user?.role, router]);
 
-  async function loadReservations() {
-    try {
-      const res = await api.reservations.getAll();
-      setReservations(res);
-    } catch {
-      setReservations([]);
-    }
-  }
+    if (!isAdmin) return null;
+    if (loading) return <PageSpinner text="Loading admin data…" />;
 
-  async function handleConfirm(id: string) {
-    setError('');
-    try {
-      await api.reservations.confirm(id);
-      await loadReservations();
-      if (stats) setStats((s) => s && { ...s, CONFIRMED: s.CONFIRMED + 1, PENDING: s.PENDING - 1 });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
-    }
-  }
+    return (
+        <div className="space-y-8">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                        Admin Dashboard
+                    </h1>
+                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                        Manage events, reservations, and view analytics.
+                    </p>
+                </div>
+                <Link href="/dashboard/admin/events/new">
+                    <Button>
+                        <Plus className="h-4 w-4" />
+                        New Event
+                    </Button>
+                </Link>
+            </div>
 
-  async function handleRefuse(id: string) {
-    setError('');
-    try {
-      await api.reservations.refuse(id);
-      await loadReservations();
-      if (stats) setStats((s) => s && { ...s, REFUSED: s.REFUSED + 1, PENDING: s.PENDING - 1 });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
-    }
-  }
+            {error && <ErrorAlert message={error} />}
 
-  async function handleCancel(id: string) {
-    setError('');
-    try {
-      await api.reservations.cancel(id);
-      await loadReservations();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
-    }
-  }
+            {/* Stats cards */}
+            {stats && (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {([
+                        { label: 'Pending', value: stats.PENDING, variant: 'warning' as const, icon: CalendarDays },
+                        { label: 'Confirmed', value: stats.CONFIRMED, variant: 'success' as const, icon: CheckCircle2 },
+                        { label: 'Refused', value: stats.REFUSED, variant: 'danger' as const, icon: XCircle },
+                        { label: 'Cancelled', value: stats.CANCELLED, variant: 'default' as const, icon: Ban },
+                    ]).map((stat) => (
+                        <Card key={stat.label}>
+                            <CardContent className="flex items-center gap-4 p-5">
+                                <div className="rounded-lg bg-zinc-100 p-2.5 dark:bg-zinc-700/50">
+                                    <stat.icon className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">{stat.label}</p>
+                                    <p className="text-2xl font-bold text-zinc-900 dark:text-white">{stat.value}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
-  if (user?.role !== 'ADMIN') return null;
-  if (loading) return <p className="text-zinc-600 dark:text-zinc-400">Loading…</p>;
+            {/* Events */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                        <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">Events</h2>
+                        <Badge variant="default">{events.length}</Badge>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                    {events.length === 0 ? (
+                        <p className="px-6 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                            No events created yet.
+                        </p>
+                    ) : (
+                        <div className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+                            {events.map((ev) => (
+                                <div
+                                    key={ev.id}
+                                    className="flex flex-wrap items-center justify-between gap-3 px-6 py-4"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div>
+                                            <span className="font-medium text-zinc-900 dark:text-white">{ev.title}</span>
+                                            <div className="mt-0.5 flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+                                                <UsersIcon className="h-3.5 w-3.5" />
+                                                {ev.placesLeft ?? ev.maxCapacity}/{ev.maxCapacity} places
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <StatusBadge status={ev.status} />
+                                        <Link href={`/dashboard/admin/events/${ev.id}/edit`}>
+                                            <Button variant="outline" size="sm">
+                                                <Pencil className="h-3.5 w-3.5" />
+                                                Edit
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
-  return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-        Admin dashboard
-      </h1>
-      {error && (
-        <p className="rounded bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
-          {error}
-        </p>
-      )}
-      {stats && (
-        <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-          <h2 className="mb-3 font-semibold text-zinc-900 dark:text-white">
-            Reservations by status
-          </h2>
-          <ul className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-            <li>PENDING: {stats.PENDING}</li>
-            <li>CONFIRMED: {stats.CONFIRMED}</li>
-            <li>REFUSED: {stats.REFUSED}</li>
-            <li>CANCELLED: {stats.CANCELLED}</li>
-          </ul>
-        </section>
-      )}
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
-            Events
-          </h2>
-          <Link
-            href="/dashboard/admin/events/new"
-            className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            New event
-          </Link>
+            {/* Reservations */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <CalendarDays className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                        <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">All Reservations</h2>
+                        <Badge variant="default">{reservations.length}</Badge>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                    {reservations.length === 0 ? (
+                        <p className="px-6 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                            No reservations yet.
+                        </p>
+                    ) : (
+                        <div className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+                            {reservations.map((r) => (
+                                <div
+                                    key={r.id}
+                                    className="flex flex-wrap items-center justify-between gap-3 px-6 py-4"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div>
+                                            <span className="font-medium text-zinc-900 dark:text-white">
+                                                {r.event?.title ?? r.eventId}
+                                            </span>
+                                        </div>
+                                        <StatusBadge status={r.status} />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {r.status === 'PENDING' && (
+                                            <>
+                                                <Button size="sm" onClick={() => handleAction(r.id, 'confirm')}>
+                                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                                    Confirm
+                                                </Button>
+                                                <Button variant="danger" size="sm" onClick={() => handleAction(r.id, 'refuse')}>
+                                                    <XCircle className="h-3.5 w-3.5" />
+                                                    Refuse
+                                                </Button>
+                                            </>
+                                        )}
+                                        {(r.status === 'CONFIRMED' || r.status === 'PENDING') && (
+                                            <Button variant="outline" size="sm" onClick={() => handleAction(r.id, 'cancel')}>
+                                                <Ban className="h-3.5 w-3.5" />
+                                                Cancel
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
-        {events.length === 0 ? (
-          <p className="text-zinc-600 dark:text-zinc-400">No events.</p>
-        ) : (
-          <ul className="space-y-2">
-            {events.map((ev) => (
-              <li
-                key={ev.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800"
-              >
-                <div>
-                  <span className="font-medium text-zinc-900 dark:text-white">{ev.title}</span>
-                  <span className="ml-2 text-sm text-zinc-500 dark:text-zinc-500">
-                    {ev.status} · {ev.placesLeft ?? ev.maxCapacity}/{ev.maxCapacity} places
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <Link
-                    href={`/dashboard/admin/events/${ev.id}/edit`}
-                    className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600 dark:text-zinc-300"
-                  >
-                    Edit
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <section>
-        <h2 className="mb-4 text-xl font-semibold text-zinc-900 dark:text-white">
-          My reservations (admin view)
-        </h2>
-        {reservations.length === 0 ? (
-          <p className="text-zinc-600 dark:text-zinc-400">No reservations.</p>
-        ) : (
-          <ul className="space-y-2">
-            {reservations.map((r) => (
-              <li
-                key={r.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800"
-              >
-                <div>
-                  <span className="font-medium text-zinc-900 dark:text-white">
-                    {r.event?.title ?? r.eventId}
-                  </span>
-                  <span className="ml-2 text-sm text-zinc-500 dark:text-zinc-500">
-                    {r.status}
-                  </span>
-                </div>
-                {r.status === 'PENDING' && (
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleConfirm(r.id)}
-                      className="rounded bg-green-700 px-2 py-1 text-sm text-white hover:bg-green-800"
-                    >
-                      Confirm
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRefuse(r.id)}
-                      className="rounded bg-red-700 px-2 py-1 text-sm text-white hover:bg-red-800"
-                    >
-                      Refuse
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCancel(r.id)}
-                      className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-                {(r.status === 'CONFIRMED' || r.status === 'REFUSED') && (
-                  <button
-                    type="button"
-                    onClick={() => handleCancel(r.id)}
-                    className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
-  );
+    );
 }

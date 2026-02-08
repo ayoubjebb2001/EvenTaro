@@ -2,134 +2,135 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Download, XCircle, CalendarDays, MapPin, Clock } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
 import type { ReservationResponse } from '@/lib/api';
+import { formatDate } from '@/lib/utils';
+import {
+    Card, CardContent, Button, StatusBadge,
+    ErrorAlert, PageSpinner,
+} from '@/components/ui';
 
 export default function DashboardPage() {
-  const [reservations, setReservations] = useState<ReservationResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [cancelling, setCancelling] = useState<string | null>(null);
+    const [reservations, setReservations] = useState<ReservationResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [cancelling, setCancelling] = useState<string | null>(null);
 
-  useEffect(() => {
-    api.reservations
-      .getMy()
-      .then(setReservations)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
-      .finally(() => setLoading(false));
-  }, []);
+    useEffect(() => {
+        api.reservations
+            .getMy()
+            .then(setReservations)
+            .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
+            .finally(() => setLoading(false));
+    }, []);
 
-  async function handleCancel(id: string) {
-    setCancelling(id);
-    setError('');
-    try {
-      await api.reservations.cancel(id);
-      setReservations((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status: 'CANCELLED' } : r))
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Cancel failed');
-    } finally {
-      setCancelling(null);
+    async function handleCancel(id: string) {
+        setCancelling(id);
+        setError('');
+        try {
+            await api.reservations.cancel(id);
+            setReservations((prev) =>
+                prev.map((r) => (r.id === id ? { ...r, status: 'CANCELLED' } : r)),
+            );
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Cancel failed');
+        } finally {
+            setCancelling(null);
+        }
     }
-  }
 
-  function handleDownloadTicket(id: string) {
-    const token = getAccessToken();
-    if (!token) return;
-    const url = api.reservations.ticketUrl(id);
-    const a = document.createElement('a');
-    a.href = url;
-    a.setAttribute('download', 'ticket.pdf');
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => res.blob())
-      .then((blob) => {
-        const u = URL.createObjectURL(blob);
-        a.href = u;
-        a.click();
-        URL.revokeObjectURL(u);
-      })
-      .finally(() => document.body.removeChild(a));
-  }
+    function handleDownloadTicket(id: string) {
+        const token = getAccessToken();
+        if (!token) return;
+        const url = api.reservations.ticketUrl(id);
+        fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+            .then((res) => res.blob())
+            .then((blob) => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'ticket.pdf';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            });
+    }
 
-  if (loading) {
-    return <p className="text-zinc-600 dark:text-zinc-400">Loading your reservations…</p>;
-  }
+    if (loading) return <PageSpinner text="Loading your reservations…" />;
 
-  return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold text-zinc-900 dark:text-white">
-        My reservations
-      </h1>
-      {error && (
-        <p className="mb-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
-          {error}
-        </p>
-      )}
-      {reservations.length === 0 ? (
-        <p className="text-zinc-600 dark:text-zinc-400">
-          You have no reservations. <Link href="/events" className="underline">Browse events</Link>.
-        </p>
-      ) : (
-        <ul className="space-y-4">
-          {reservations.map((r) => (
-            <li
-              key={r.id}
-              className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <h2 className="font-semibold text-zinc-900 dark:text-white">
-                    {r.event?.title ?? 'Event'}
-                  </h2>
-                  {r.event && (
-                    <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                      {new Date(r.event.dateTime).toLocaleString()} · {r.event.location}
-                    </p>
-                  )}
-                  <p className="mt-1 text-sm">
-                    Status:{' '}
-                    <span
-                      className={
-                        r.status === 'CONFIRMED'
-                          ? 'text-green-600 dark:text-green-400'
-                          : r.status === 'CANCELLED' || r.status === 'REFUSED'
-                            ? 'text-zinc-500 dark:text-zinc-500'
-                            : 'text-amber-600 dark:text-amber-400'
-                      }
-                    >
-                      {r.status}
-                    </span>
-                  </p>
+    return (
+        <div className="space-y-6">
+            <div>
+                <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                    My Reservations
+                </h1>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    View and manage your event reservations.
+                </p>
+            </div>
+
+            {error && <ErrorAlert message={error} />}
+
+            {reservations.length === 0 ? (
+                <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-16">
+                        <CalendarDays className="mb-4 h-12 w-12 text-zinc-300 dark:text-zinc-600" />
+                        <p className="text-lg font-medium text-zinc-900 dark:text-white">No reservations yet</p>
+                        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                            Browse events and reserve your spot.
+                        </p>
+                        <Link href="/events" className="mt-4">
+                            <Button variant="secondary">Browse events</Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {reservations.map((r) => (
+                        <Card key={r.id}>
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <h2 className="truncate font-semibold text-zinc-900 dark:text-white">
+                                            {r.event?.title ?? 'Event'}
+                                        </h2>
+                                        {r.event && (
+                                            <div className="mt-2 space-y-1">
+                                                <div className="flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+                                                    <Clock className="h-3.5 w-3.5" />
+                                                    {formatDate(r.event.dateTime)}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+                                                    <MapPin className="h-3.5 w-3.5" />
+                                                    {r.event.location}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <StatusBadge status={r.status} />
+                                </div>
+
+                                {r.status === 'CONFIRMED' && (
+                                    <div className="mt-4 flex gap-2">
+                                        <Button size="sm" onClick={() => handleDownloadTicket(r.id)}>
+                                            <Download className="h-3.5 w-3.5" />
+                                            Ticket
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleCancel(r.id)}
+                                            disabled={cancelling === r.id}
+                                        >
+                                            <XCircle className="h-3.5 w-3.5" />
+                                            {cancelling === r.id ? 'Cancelling…' : 'Cancel'}
+                                        </Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
-                <div className="flex gap-2">
-                  {r.status === 'CONFIRMED' && (
-                    <button
-                      type="button"
-                      onClick={() => handleDownloadTicket(r.id)}
-                      className="rounded bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                    >
-                      Download ticket
-                    </button>
-                  )}
-                  {r.status === 'CONFIRMED' && (
-                    <button
-                      type="button"
-                      onClick={() => handleCancel(r.id)}
-                      disabled={cancelling === r.id}
-                      className="rounded border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                    >
-                      {cancelling === r.id ? 'Cancelling…' : 'Cancel'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+            )}
+        </div>
+    );
 }
