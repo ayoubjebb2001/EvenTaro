@@ -12,6 +12,8 @@
     "dev:api": "npm run dev --workspace=api",
     "build:web": "npm run build --workspace=web",
     "build:api": "npm run build --workspace=api",
+    "test": "npm run test --workspaces",
+    "test:e2e": "npm run test:e2e --workspaces",
     "lint": "npm run lint --workspaces",
     "lint:fix": "npm run lint --fix --workspaces",
     "test": "npm run test --workspaces",
