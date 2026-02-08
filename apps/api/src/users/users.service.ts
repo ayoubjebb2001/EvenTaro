@@ -35,7 +35,7 @@ export class UsersService {
   }
 
   toResponseDto(user: UserModel): UserResponseDto {
-    const { id, email, role, createdAt } = user;
-    return { id, email, role, createdAt };
+    const { id, fullName, email, role, createdAt } = user;
+    return { id, fullName, email, role, createdAt };
   }
 }
