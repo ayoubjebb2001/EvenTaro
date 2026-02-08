@@ -16,7 +16,6 @@
     "test:e2e": "npm run test:e2e --workspaces",
     "lint": "npm run lint --workspaces",
     "lint:fix": "npm run lint --fix --workspaces",
-    "test": "npm run test --workspaces",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
