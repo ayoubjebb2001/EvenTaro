@@ -1,9 +1,9 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { User } from 'src/generated/prisma/client';
+import type { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 export const CurrentUser = createParamDecorator(
-  (data: string | undefined, ctx: ExecutionContext) => {
-    const { user } = ctx.switchToHttp().getRequest<{ user: User }>();
+  (data: keyof JwtPayload | undefined, ctx: ExecutionContext) => {
+    const { user } = ctx.switchToHttp().getRequest<{ user: JwtPayload }>();
     if (!data) {
       return user;
     }

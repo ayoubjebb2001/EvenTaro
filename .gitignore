@@ -49,3 +49,5 @@ Thumbs.db
 *~
 .cache
 .github/
+cursor.md
+.cursor/rules/eventaro-context.md
