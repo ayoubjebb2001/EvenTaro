@@ -45,7 +45,7 @@ describe('EventsService', () => {
     }).compile();
 
     service = module.get<EventsService>(EventsService);
-    prisma = module.get(PrismaService) as jest.Mocked<PrismaService>;
+    prisma = module.get(PrismaService);
     jest.clearAllMocks();
   });
 
@@ -106,7 +106,9 @@ describe('EventsService', () => {
     it('should throw NotFound when event does not exist', async () => {
       (prisma.event.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.findOne('missing')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('missing')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

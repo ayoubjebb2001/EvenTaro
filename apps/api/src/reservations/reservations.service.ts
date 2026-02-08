@@ -11,8 +11,8 @@ import { ReservationResponseDto } from './dto/reservation-response.dto';
 import { EventStatus, ReservationStatus } from '../generated/prisma/enums';
 import type { ReservationModel } from '../generated/prisma/models/Reservation';
 import type { EventModel } from '../generated/prisma/models/Event';
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
-const PDFDocument = require('pdfkit') as any;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const PDFDocument = require('pdfkit');
 
 const HOURS_BEFORE_EVENT_TO_CANCEL = 48;
 
@@ -20,7 +20,10 @@ const HOURS_BEFORE_EVENT_TO_CANCEL = 48;
 export class ReservationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, dto: CreateReservationDto): Promise<ReservationResponseDto> {
+  async create(
+    userId: string,
+    dto: CreateReservationDto,
+  ): Promise<ReservationResponseDto> {
     const event = await this.prisma.event.findUnique({
       where: { id: dto.eventId },
       include: { _count: { select: { reservations: true } } },
@@ -35,7 +38,9 @@ export class ReservationsService {
     const activeReservationCount = await this.prisma.reservation.count({
       where: {
         eventId: event.id,
-        status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
+        status: {
+          in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        },
       },
     });
     if (activeReservationCount >= event.maxCapacity) {
@@ -46,17 +51,23 @@ export class ReservationsService {
       where: {
         userId,
         eventId: event.id,
-        status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
+        status: {
+          in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        },
       },
     });
     if (existing) {
-      throw new BadRequestException('You already have a reservation for this event');
+      throw new BadRequestException(
+        'You already have a reservation for this event',
+      );
     }
 
     const reservation = await this.prisma.reservation.create({
       data: { userId, eventId: event.id },
       include: {
-        event: { select: { id: true, title: true, dateTime: true, location: true } },
+        event: {
+          select: { id: true, title: true, dateTime: true, location: true },
+        },
       },
     });
     return this.toResponse(reservation);
@@ -86,7 +97,9 @@ export class ReservationsService {
     const list = await this.prisma.reservation.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        event: { select: { id: true, title: true, dateTime: true, location: true } },
+        event: {
+          select: { id: true, title: true, dateTime: true, location: true },
+        },
         user: { select: { id: true, fullName: true, email: true } },
       },
     });
@@ -98,7 +111,9 @@ export class ReservationsService {
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
-        event: { select: { id: true, title: true, dateTime: true, location: true } },
+        event: {
+          select: { id: true, title: true, dateTime: true, location: true },
+        },
       },
     });
     return list.map((r) => this.toResponse(r));
@@ -118,7 +133,9 @@ export class ReservationsService {
   async confirm(id: string): Promise<ReservationResponseDto> {
     const reservation = await this.findOne(id);
     if (reservation.status !== ReservationStatus.PENDING) {
-      throw new BadRequestException('Only pending reservations can be confirmed');
+      throw new BadRequestException(
+        'Only pending reservations can be confirmed',
+      );
     }
     const event = await this.prisma.event.findUnique({
       where: { id: reservation.eventId },
@@ -138,7 +155,9 @@ export class ReservationsService {
       where: { id },
       data: { status: ReservationStatus.CONFIRMED },
       include: {
-        event: { select: { id: true, title: true, dateTime: true, location: true } },
+        event: {
+          select: { id: true, title: true, dateTime: true, location: true },
+        },
       },
     });
     return this.toResponse(updated);
@@ -153,7 +172,9 @@ export class ReservationsService {
       where: { id },
       data: { status: ReservationStatus.REFUSED },
       include: {
-        event: { select: { id: true, title: true, dateTime: true, location: true } },
+        event: {
+          select: { id: true, title: true, dateTime: true, location: true },
+        },
       },
     });
     return this.toResponse(updated);
@@ -171,22 +192,31 @@ export class ReservationsService {
       where: { id },
       data: { status: ReservationStatus.CANCELLED },
       include: {
-        event: { select: { id: true, title: true, dateTime: true, location: true } },
+        event: {
+          select: { id: true, title: true, dateTime: true, location: true },
+        },
       },
     });
     return this.toResponse(updated);
   }
 
-  async cancelByUser(id: string, userId: string): Promise<ReservationResponseDto> {
+  async cancelByUser(
+    id: string,
+    userId: string,
+  ): Promise<ReservationResponseDto> {
     const reservation = await this.findOne(id);
     if (reservation.userId !== userId) {
       throw new ForbiddenException('Not your reservation');
     }
     if (reservation.status !== ReservationStatus.CONFIRMED) {
-      throw new BadRequestException('Only confirmed reservations can be cancelled by user');
+      throw new BadRequestException(
+        'Only confirmed reservations can be cancelled by user',
+      );
     }
     const eventDate = new Date(reservation.event.dateTime);
-    const cutoff = new Date(eventDate.getTime() - HOURS_BEFORE_EVENT_TO_CANCEL * 60 * 60 * 1000);
+    const cutoff = new Date(
+      eventDate.getTime() - HOURS_BEFORE_EVENT_TO_CANCEL * 60 * 60 * 1000,
+    );
     if (new Date() > cutoff) {
       throw new BadRequestException(
         `Cancellation is only allowed at least ${HOURS_BEFORE_EVENT_TO_CANCEL}h before the event`,
@@ -196,22 +226,35 @@ export class ReservationsService {
       where: { id },
       data: { status: ReservationStatus.CANCELLED },
       include: {
-        event: { select: { id: true, title: true, dateTime: true, location: true } },
+        event: {
+          select: { id: true, title: true, dateTime: true, location: true },
+        },
       },
     });
     return this.toResponse(updated);
   }
 
-  async getTicket(id: string, userId: string, isAdmin: boolean): Promise<StreamableFile> {
+  async getTicket(
+    id: string,
+    userId: string,
+    isAdmin: boolean,
+  ): Promise<StreamableFile> {
     const reservation = await this.findOne(id);
     if (reservation.userId !== userId && !isAdmin) {
       throw new ForbiddenException('Not allowed to download this ticket');
     }
     if (reservation.status !== ReservationStatus.CONFIRMED) {
-      throw new BadRequestException('Ticket is only available for confirmed reservations');
+      throw new BadRequestException(
+        'Ticket is only available for confirmed reservations',
+      );
     }
-    const user = await this.prisma.user.findUnique({ where: { id: reservation.userId } });
-    const buffer = await this.generateTicketPdf(reservation, user?.fullName ?? 'Participant');
+    const user = await this.prisma.user.findUnique({
+      where: { id: reservation.userId },
+    });
+    const buffer = await this.generateTicketPdf(
+      reservation,
+      user?.fullName ?? 'Participant',
+    );
     return new StreamableFile(buffer, {
       type: 'application/pdf',
       disposition: 'attachment; filename="ticket.pdf"',
@@ -232,7 +275,9 @@ export class ReservationsService {
       doc.fontSize(20).text('Event Ticket', { align: 'center' });
       doc.moveDown();
       doc.fontSize(12).text(`Event: ${reservation.event.title}`);
-      doc.text(`Date: ${new Date(reservation.event.dateTime).toLocaleString()}`);
+      doc.text(
+        `Date: ${new Date(reservation.event.dateTime).toLocaleString()}`,
+      );
       doc.text(`Location: ${reservation.event.location}`);
       doc.moveDown();
       doc.text(`Participant: ${participantName}`);
@@ -251,7 +296,7 @@ export class ReservationsService {
       id: r.id,
       userId: r.userId,
       eventId: r.eventId,
-      status: r.status as ReservationStatus,
+      status: r.status,
       createdAt: r.createdAt,
       event: r.event
         ? {

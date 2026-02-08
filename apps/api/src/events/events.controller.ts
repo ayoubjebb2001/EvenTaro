@@ -48,9 +48,7 @@ export class EventsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(AppRole.ADMIN)
   @Get(':id/stats')
-  getStats(
-    @Param('id') id: string,
-  ): Promise<{
+  getStats(@Param('id') id: string): Promise<{
     eventId: string;
     maxCapacity: number;
     reservedCount: number;

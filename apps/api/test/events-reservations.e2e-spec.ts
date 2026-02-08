@@ -70,7 +70,9 @@ describe('Events and Reservations (e2e)', () => {
 
   afterAll(async () => {
     if (reservationId) {
-      await prisma.reservation.deleteMany({ where: { id: reservationId } }).catch(() => {});
+      await prisma.reservation
+        .deleteMany({ where: { id: reservationId } })
+        .catch(() => {});
     }
     if (eventId) {
       await prisma.event.deleteMany({ where: { id: eventId } }).catch(() => {});
@@ -100,7 +102,9 @@ describe('Events and Reservations (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get('/events/published')
       .expect(200);
-    const found = Array.isArray(res.body) && res.body.some((e: { id: string }) => e.id === eventId);
+    const found =
+      Array.isArray(res.body) &&
+      res.body.some((e: { id: string }) => e.id === eventId);
     expect(found).toBe(false);
   });
 
@@ -116,7 +120,9 @@ describe('Events and Reservations (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get('/events/published')
       .expect(200);
-    const found = Array.isArray(res.body) && res.body.find((e: { id: string }) => e.id === eventId);
+    const found =
+      Array.isArray(res.body) &&
+      res.body.find((e: { id: string }) => e.id === eventId);
     expect(found).toBeDefined();
     expect(found.placesLeft).toBe(5);
   });
@@ -160,7 +166,9 @@ describe('Events and Reservations (e2e)', () => {
       .get('/reservations/my')
       .set('Authorization', `Bearer ${userAccessToken}`)
       .expect(200);
-    const found = Array.isArray(res.body) && res.body.find((r: { id: string }) => r.id === reservationId);
+    const found =
+      Array.isArray(res.body) &&
+      res.body.find((r: { id: string }) => r.id === reservationId);
     expect(found).toBeDefined();
     expect(found.status).toBe(ReservationStatus.CONFIRMED);
   });

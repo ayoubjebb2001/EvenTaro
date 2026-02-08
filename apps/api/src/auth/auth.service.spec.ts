@@ -57,8 +57,8 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    usersService = module.get(UsersService) as jest.Mocked<UsersService>;
-    jwtService = module.get(JwtService) as jest.Mocked<JwtService>;
+    usersService = module.get(UsersService);
+    jwtService = module.get(JwtService);
     jest.clearAllMocks();
   });
 

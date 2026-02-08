@@ -56,7 +56,7 @@ describe('ReservationsService', () => {
     }).compile();
 
     service = module.get<ReservationsService>(ReservationsService);
-    prisma = module.get(PrismaService) as jest.Mocked<PrismaService>;
+    prisma = module.get(PrismaService);
     jest.clearAllMocks();
   });
 
@@ -84,7 +84,9 @@ describe('ReservationsService', () => {
     it('should throw when user already has a reservation', async () => {
       (prisma.event.findUnique as jest.Mock).mockResolvedValue(mockEvent);
       (prisma.reservation.count as jest.Mock).mockResolvedValue(0);
-      (prisma.reservation.findFirst as jest.Mock).mockResolvedValue(mockReservation);
+      (prisma.reservation.findFirst as jest.Mock).mockResolvedValue(
+        mockReservation,
+      );
 
       await expect(
         service.create('user-1', { eventId: 'ev-1' }),
@@ -123,9 +125,9 @@ describe('ReservationsService', () => {
         event: mockEvent,
       });
 
-      await expect(
-        service.cancelByUser('res-1', 'user-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.cancelByUser('res-1', 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw when less than 48h before event', async () => {
@@ -139,9 +141,9 @@ describe('ReservationsService', () => {
         event: soonEvent,
       });
 
-      await expect(
-        service.cancelByUser('res-1', 'user-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.cancelByUser('res-1', 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw when not the reservation owner', async () => {
@@ -151,9 +153,9 @@ describe('ReservationsService', () => {
         event: mockEvent,
       });
 
-      await expect(
-        service.cancelByUser('res-1', 'other-user'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.cancelByUser('res-1', 'other-user')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -165,7 +167,9 @@ describe('ReservationsService', () => {
         event: mockEvent,
       });
 
-      await expect(service.confirm('res-1')).rejects.toThrow(BadRequestException);
+      await expect(service.confirm('res-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

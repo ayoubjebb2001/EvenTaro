@@ -55,7 +55,9 @@ export class ReservationsController {
   @Get('my')
   @UseGuards(RolesGuard)
   @Roles(AppRole.USER, AppRole.ADMIN)
-  findMy(@CurrentUser('sub') userId: string): Promise<ReservationResponseDto[]> {
+  findMy(
+    @CurrentUser('sub') userId: string,
+  ): Promise<ReservationResponseDto[]> {
     return this.reservationsService.findMy(userId);
   }
 

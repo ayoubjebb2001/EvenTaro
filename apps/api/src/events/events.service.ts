@@ -22,7 +22,9 @@ export class EventsService {
       by: ['eventId'],
       where: {
         eventId: { in: eventIds },
-        status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
+        status: {
+          in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        },
       },
       _count: { id: true },
     });
@@ -36,20 +38,20 @@ export class EventsService {
       where: { status: EventStatus.PUBLISHED },
       orderBy: { dateTime: 'asc' },
     });
-    const countMap = await this.getActiveReservationCounts(events.map((e) => e.id));
-    return events.map((e) =>
-      this.toResponse(e, countMap.get(e.id) ?? 0),
+    const countMap = await this.getActiveReservationCounts(
+      events.map((e) => e.id),
     );
+    return events.map((e) => this.toResponse(e, countMap.get(e.id) ?? 0));
   }
 
   async findAll(): Promise<EventResponseDto[]> {
     const events = await this.prisma.event.findMany({
       orderBy: { dateTime: 'asc' },
     });
-    const countMap = await this.getActiveReservationCounts(events.map((e) => e.id));
-    return events.map((e) =>
-      this.toResponse(e, countMap.get(e.id) ?? 0),
+    const countMap = await this.getActiveReservationCounts(
+      events.map((e) => e.id),
     );
+    return events.map((e) => this.toResponse(e, countMap.get(e.id) ?? 0));
   }
 
   async findUpcoming(): Promise<EventResponseDto[]> {
@@ -57,10 +59,10 @@ export class EventsService {
       where: { dateTime: { gte: new Date() } },
       orderBy: { dateTime: 'asc' },
     });
-    const countMap = await this.getActiveReservationCounts(events.map((e) => e.id));
-    return events.map((e) =>
-      this.toResponse(e, countMap.get(e.id) ?? 0),
+    const countMap = await this.getActiveReservationCounts(
+      events.map((e) => e.id),
     );
+    return events.map((e) => this.toResponse(e, countMap.get(e.id) ?? 0));
   }
 
   async findOne(id: string): Promise<EventResponseDto> {
@@ -174,7 +176,7 @@ export class EventsService {
       dateTime: event.dateTime,
       location: event.location,
       maxCapacity: event.maxCapacity,
-      status: event.status as EventStatus,
+      status: event.status,
       createdAt: event.createdAt,
       placesLeft,
     };
